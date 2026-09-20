@@ -9,9 +9,20 @@ const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapCont
 const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then((m) => m.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then((m) => m.Popup), { ssr: false });
+const useMap = dynamic(() => import('react-leaflet').then((m) => m.useMap), { ssr: false });
+
+// 地図の中心を動かすための内部コンポーネント
+function MapController({ center }: { center: [number, number] }) {
+  // @ts-ignore
+  const map = useMap();
+  useEffect(() => {
+    map.setView(center, 15); // 緯度経度が変わったらズーム15で移動！
+  }, [center, map]);
+  return null;
+}
 
 export default function Home() {
-  const [coords, setCoords] = useState<[number, number]>([35.6812, 139.7671]);
+  const [coords, setCoords] = useState<[number, number]>([35.6812, 139.7671]); // 初期値：東京駅
   const [loading, setLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
 
@@ -19,11 +30,11 @@ export default function Home() {
     setIsClient(true);
   }, []);
 
-  // 登録されたトイレのスポットデータ（緯度・経度・名前）
+  // 登録されたトイレのスポットデータ（例として東京駅周辺と現在地付近）
   const toiletSpots = [
-    { id: 1, lat: 35.6850, lng: 139.7100, name: '神聖な個室 A' },
-    { id: 2, lat: 35.6750, lng: 139.7700, name: '隠れ家的な個室 B' },
-    { id: 3, lat: 35.6900, lng: 139.7500, name: '潤いの個室 C' },
+    { id: 1, lat: 35.6816, lng: 139.7671, name: '東京駅ナカの聖域トイレ' },
+    { id: 2, lat: 35.6850, lng: 139.7100, name: '神聖な個室 A' },
+    { id: 3, lat: 35.6750, lng: 139.7700, name: '隠れ家的な個室 B' },
   ];
 
   const handleGetLocation = () => {
@@ -37,12 +48,13 @@ export default function Home() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        setCoords([latitude, longitude]);
+        console.log('取得した現在地:', latitude, longitude);
+        setCoords([latitude, longitude]); // ここで地図の中心座標を更新！
         setLoading(false);
       },
       (error) => {
         console.error('位置情報の取得エラー:', error);
-        alert('現在地を取得できませんでした。ブラウザの位置情報許可を確認してください。');
+        alert('現在地を取得できませんでした。ブラウザの位置情報許可（アドレスバーの鍵マーク等）を確認してください。');
         setLoading(false);
       },
       {
@@ -92,6 +104,7 @@ export default function Home() {
       <div style={{ width: '100%', maxWidth: '800px', height: '480px', margin: '0 auto', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
         {isClient && (
           <MapContainer center={coords} zoom={13} style={{ width: '100%', height: '100%' }}>
+            <MapController center={coords} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
