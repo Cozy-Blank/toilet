@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
-import L from 'leaflet'; // Leaflet本体のインポート
+import L from 'leaflet';
 
 // Leafletの地図コンポーネントを動的に読み込む（SSR対策）
 const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false });
@@ -11,46 +11,46 @@ const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer)
 const Marker = dynamic(() => import('react-leaflet').then((m) => m.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then((m) => m.Popup), { ssr: false });
 
-// 【色彩コーディネーター特製】オリジナルのカスタムトイレアイコンを作成！
+// 【色彩コーディネーター特製】清潔感あふれるミントブルーのトイレアイコン
 const customToiletIcon = L.divIcon({
   className: 'custom-toilet-marker',
   html: `
     <div style="
-      background-color: #C53030; 
+      background-color: #319795; 
       color: white; 
-      width: 36px; 
-      height: 36px; 
+      width: 38px; 
+      height: 38px; 
       border-radius: 50%; 
       display: flex; 
       align-items: center; 
       justify-content: center; 
       font-size: 18px; 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
       border: 2px solid #ffffff;
       font-weight: bold;
     ">🚻</div>
   `,
-  iconSize: [36, 36],
-  iconAnchor: [18, 18], // アイコンの中心を座標に合わせる
-  popupAnchor: [0, -18],
+  iconSize: [38, 38],
+  iconAnchor: [19, 19],
+  popupAnchor: [0, -19],
 });
 
 export default function Home() {
   const [coords, setCoords] = useState<[number, number]>([35.6812, 139.7671]); // 初期値：東京駅
   const [loading, setLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [mapKey, setMapKey] = useState(0); // 地図の強制再描画用キー
+  const [mapKey, setMapKey] = useState(0);
+
+  // トイレスポットの状態管理（現在地に応じて変わるようにするよ！）
+  const [toiletSpots, setToiletSpots] = useState([
+    { id: 1, lat: 35.6816, lng: 139.7671, name: '東京駅ナカの聖域トイレ' },
+    { id: 2, lat: 35.6850, lng: 139.7100, name: '神聖な個室 A' },
+    { id: 3, lat: 35.6750, lng: 139.7700, name: '隠れ家的な個室 B' },
+  ]);
 
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  // 登録されたトイレのスポットデータ（現在地付近やテスト用）
-  const toiletSpots = [
-    { id: 1, lat: 35.6816, lng: 139.7671, name: '東京駅ナカの聖域トイレ' },
-    { id: 2, lat: 35.6850, lng: 139.7100, name: '神聖な個室 A' },
-    { id: 3, lat: 35.6750, lng: 139.7700, name: '隠れ家的な個室 B' },
-  ];
 
   const handleGetLocation = () => {
     if (!navigator.geolocation) {
@@ -64,8 +64,19 @@ export default function Home() {
       (position) => {
         const { latitude, longitude } = position.coords;
         console.log('取得した現在地:', latitude, longitude);
-        setCoords([latitude, longitude]); // 座標を現在地に更新！
-        setMapKey((prev) => prev + 1);    // 地図を再描画して現在地へワープ！
+        
+        // 1. 地図の中心を現在地に更新
+        setCoords([latitude, longitude]);
+        setMapKey((prev) => prev + 1);
+
+        // 2. 現在地のまわりに新しいトイレスポットを自動生成してセット！
+        const nearbySpots = [
+          { id: 101, lat: latitude + 0.002, lng: longitude + 0.002, name: 'あなたのすぐ近くの隠れ家トイレ（北）' },
+          { id: 102, lat: latitude - 0.002, lng: longitude - 0.002, name: '静寂に包まれた極上個室（南）' },
+          { id: 103, lat: latitude + 0.003, lng: longitude - 0.001, name: 'ウォシュレット完備の聖地（西）' },
+        ];
+        setToiletSpots(nearbySpots);
+
         setLoading(false);
       },
       (error) => {
@@ -106,11 +117,11 @@ export default function Home() {
 
       {/* トイレスポット一覧 */}
       <div style={{ margin: '15px auto', maxWidth: '800px', textAlign: 'left', background: '#fff', padding: '10px 15px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-        <h3 style={{ fontSize: '14px', color: '#1E293B', margin: '0 0 8px 0' }}>🚻 周辺の登録トイレ ({toiletSpots.length}件)</h3>
+        <h3 style={{ fontSize: '14px', color: '#1E293B', margin: '0 0 8px 0' }}>🚻 現在地周辺の聖域トイレ ({toiletSpots.length}件)</h3>
         <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#444' }}>
           {toiletSpots.map((spot) => (
             <li key={spot.id} style={{ margin: '4px 0' }}>
-              <strong>{spot.name}</strong> （緯度: {spot.lat}, 経度: {spot.lng}）
+              <strong>{spot.name}</strong> （緯度: {spot.lat.toFixed(4)}, 経度: {spot.lng.toFixed(4)}）
             </li>
           ))}
         </ul>
@@ -124,7 +135,7 @@ export default function Home() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {/* 各トイレスポットにカスタムアイコン（ピン）を配置 */}
+            {/* 更新されたトイレスポットのピンを地図に表示 */}
             {toiletSpots.map((spot) => (
               <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={customToiletIcon}>
                 <Popup>
