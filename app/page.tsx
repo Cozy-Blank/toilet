@@ -9,21 +9,12 @@ const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapCont
 const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer), { ssr: false });
 const Marker = dynamic(() => import('react-leaflet').then((m) => m.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then((m) => m.Popup), { ssr: false });
-const useMap = dynamic(() => import('react-leaflet').then((m) => m.useMap), { ssr: false });
-
-// 地図の中心を現在地に動かすための内部コントローラー
-function MapViewController({ center }: { center: [number, number] }) {
-  const map = useMap();
-  useEffect(() => {
-    map.setView(center, 15); // 緯度経度が更新されたらズーム15でその場所へ移動！
-  }, [center, map]);
-  return null;
-}
 
 export default function Home() {
   const [coords, setCoords] = useState<[number, number]>([35.6812, 139.7671]); // 初期値：東京駅
   const [loading, setLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
+  const [mapKey, setMapKey] = useState(0); // 地図を強制的に再描画するためのキー
 
   useEffect(() => {
     setIsClient(true);
@@ -48,7 +39,8 @@ export default function Home() {
       (position) => {
         const { latitude, longitude } = position.coords;
         console.log('取得した現在地:', latitude, longitude);
-        setCoords([latitude, longitude]); // 現在地の座標に更新！
+        setCoords([latitude, longitude]); // 座標を現在地に更新！
+        setMapKey((prev) => prev + 1);    // 地図のキーを変更して強制的に再描画！
         setLoading(false);
       },
       (error) => {
@@ -99,11 +91,10 @@ export default function Home() {
         </ul>
       </div>
 
-      {/* Leafletを使ったインタラクティブな地図エリア */}
+      {/* Leafletを使ったインタラクティブな地図エリア（keyを使って強制再描画） */}
       <div style={{ width: '100%', maxWidth: '800px', height: '480px', margin: '0 auto', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
         {isClient && (
-          <MapContainer center={coords} zoom={13} style={{ width: '100%', height: '100%' }}>
-            <MapViewController center={coords} />
+          <MapContainer key={mapKey} center={coords} zoom={15} style={{ width: '100%', height: '100%' }}>
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
