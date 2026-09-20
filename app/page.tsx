@@ -12,26 +12,28 @@ const Popup = dynamic(() => import('react-leaflet').then((m) => m.Popup), { ssr:
 
 export default function Home() {
   const [coords, setCoords] = useState<[number, number]>([35.6812, 139.7671]); // 初期値：東京駅
+  const [currentLocation, setCurrentLocation] = useState<[number, number] | null>(null); // 現在地を保持
   const [loading, setLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
   const [mapKey, setMapKey] = useState(0);
 
-  // 【色彩コーディネーター特製】アースカラー（深緑）のトイレアイコンを作る関数
-  const [customIcon, setCustomIcon] = useState<any>(null);
+  // アイコンの状態管理
+  const [toiletIcon, setToiletIcon] = useState<any>(null);
+  const [userIcon, setUserIcon] = useState<any>(null);
 
-  // トイレスポットの状態管理
+  // トイレスポット（周辺にたくさん表示できるように増量！）
   const [toiletSpots, setToiletSpots] = useState([
-    { id: 1, lat: 35.6816, lng: 139.7671, name: '東京駅ナカの聖域トイレ' },
-    { id: 2, lat: 35.6850, lng: 139.7100, name: '神聖な個室 A' },
-    { id: 3, lat: 35.6750, lng: 139.7700, name: '隠れ家的な個室 B' },
+    { id: 1, lat: 35.6816, lng: 139.7671, name: '東京駅ナカの聖域トイレ', address: '東京都千代田区丸の内1丁目' },
+    { id: 2, lat: 35.6850, lng: 139.7100, name: '神聖な個室 A', address: '東京都新宿区西新宿' },
+    { id: 3, lat: 35.6750, lng: 139.7700, name: '隠れ家的な個室 B', address: '東京都中央区銀座' },
   ]);
 
   useEffect(() => {
     setIsClient(true);
 
-    // ブラウザ側（クライアント）でのみ Leaflet (L) を安全に読み込んでアイコンを作成するよ！
     import('leaflet').then((L) => {
-      const icon = L.divIcon({
+      // トイレ用カスタムアイコン（アースカラー・深緑）
+      const tIcon = L.divIcon({
         className: 'custom-toilet-marker',
         html: `
           <div style="
@@ -53,7 +55,32 @@ export default function Home() {
         iconAnchor: [19, 19],
         popupAnchor: [0, -19],
       });
-      setCustomIcon(icon);
+      setToiletIcon(tIcon);
+
+      // 現在地用カスタムアイコン（安心のブルー・パルス風）
+      const uIcon = L.divIcon({
+        className: 'custom-user-marker',
+        html: `
+          <div style="
+            background-color: #3182CE; 
+            color: white; 
+            width: 32px; 
+            height: 32px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 16px; 
+            box-shadow: 0 0 0 6px rgba(49,130,206,0.3);
+            border: 2px solid #ffffff;
+            font-weight: bold;
+          ">📍</div>
+        `,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16],
+        popupAnchor: [0, -16],
+      });
+      setUserIcon(uIcon);
     });
   }, []);
 
@@ -70,15 +97,18 @@ export default function Home() {
         const { latitude, longitude } = position.coords;
         console.log('取得した現在地:', latitude, longitude);
         
-        // 1. 地図の中心を現在地に更新
-        setCoords([latitude, longitude]);
+        const currentCoord: [number, number] = [latitude, longitude];
+        setCoords(currentCoord);
+        setCurrentLocation(currentCoord); // 現在地をセット！
         setMapKey((prev) => prev + 1);
 
-        // 2. 現在地のまわりに新しいトイレスポットを自動生成してセット！
+        // 現在地周辺にたっぷり（5件以上）のトイレスポットを自動生成！
         const nearbySpots = [
-          { id: 101, lat: latitude + 0.002, lng: longitude + 0.002, name: 'あなたのすぐ近くの隠れ家トイレ（北）' },
-          { id: 102, lat: latitude - 0.002, lng: longitude - 0.002, name: '静寂に包まれた極上個室（南）' },
-          { id: 103, lat: latitude + 0.003, lng: longitude - 0.001, name: 'ウォシュレット完備の聖地（西）' },
+          { id: 101, lat: latitude + 0.0015, lng: longitude + 0.002, name: '駅前ビルの綺麗すぎる個室', address: '現在地北側ビル1階' },
+          { id: 102, lat: latitude - 0.002, lng: longitude - 0.0015, name: '静寂の隠れ家トイレ', address: '裏路地の落ち着いた空間' },
+          { id: 103, lat: latitude + 0.003, lng: longitude - 0.0025, name: 'ウォシュレット完備の聖地', address: '大通り沿い商業施設' },
+          { id: 104, lat: latitude - 0.001, lng: longitude + 0.003, name: '24時間安心の個室スペース', address: '公園横の公衆トイレ' },
+          { id: 105, lat: latitude + 0.0025, lng: longitude + 0.001, name: 'プレミアムリフレッシュ個室', address: 'ホテル1階ロビー奥' },
         ];
         setToiletSpots(nearbySpots);
 
@@ -121,12 +151,31 @@ export default function Home() {
       </button>
 
       {/* トイレスポット一覧 */}
-      <div style={{ margin: '15px auto', maxWidth: '800px', textAlign: 'left', background: '#fff', padding: '10px 15px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-        <h3 style={{ fontSize: '14px', color: '#2F855A', margin: '0 0 8px 0' }}>🚻 現在地周辺の聖域トイレ ({toiletSpots.length}件)</h3>
+      <div style={{ margin: '15px auto', maxWidth: '800px', textAlign: 'left', background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
+        <h3 style={{ fontSize: '14px', color: '#2F855A', margin: '0 0 10px 0' }}>🚻 周辺の聖域トイレ ({toiletSpots.length}件)</h3>
         <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#444' }}>
           {toiletSpots.map((spot) => (
-            <li key={spot.id} style={{ margin: '4px 0' }}>
-              <strong>{spot.name}</strong> （緯度: {spot.lat.toFixed(4)}, 経度: {spot.lng.toFixed(4)}）
+            <li key={spot.id} style={{ margin: '8px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+              <div>
+                <strong>{spot.name}</strong> <span style={{ color: '#666', fontSize: '12px' }}>({spot.address})</span>
+              </div>
+              <a
+                href={`https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{
+                  backgroundColor: '#D69E2E',
+                  color: 'white',
+                  padding: '4px 10px',
+                  borderRadius: '15px',
+                  textDecoration: 'none',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  boxShadow: '0 2px 6px rgba(0,0,0,0.1)',
+                }}
+              >
+                🗺️ ここへナビする
+              </a>
             </li>
           ))}
         </ul>
@@ -134,17 +183,36 @@ export default function Home() {
 
       {/* Leafletを使ったインタラクティブな地図エリア */}
       <div style={{ width: '100%', maxWidth: '800px', height: '480px', margin: '0 auto', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
-        {isClient && customIcon && (
+        {isClient && toiletIcon && userIcon && (
           <MapContainer key={mapKey} center={coords} zoom={15} style={{ width: '100%', height: '100%' }}>
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {/* 更新されたトイレスポットのピンを地図に表示 */}
-            {toiletSpots.map((spot) => (
-              <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={customIcon}>
+            
+            {/* 1. 現在地マーカーを表示 */}
+            {currentLocation && (
+              <Marker position={currentLocation} icon={userIcon}>
                 <Popup>
-                  <strong>{spot.name}</strong><br />きれいな個室です🚻
+                  <strong>📍 あなたの現在地</strong><br />ここから出発！
+                </Popup>
+              </Marker>
+            )}
+
+            {/* 2. 周辺のトイレスポットのピンをすべて表示 */}
+            {toiletSpots.map((spot) => (
+              <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={toiletIcon}>
+                <Popup>
+                  <strong>{spot.name}</strong><br />
+                  {spot.address}<br /><br />
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: '#2B6CB0', fontWeight: 'bold', textDecoration: 'underline' }}
+                  >
+                    🗺️ Googleマップでナビを開く
+                  </a>
                 </Popup>
               </Marker>
             ))}
