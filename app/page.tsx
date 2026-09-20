@@ -11,12 +11,11 @@ const Marker = dynamic(() => import('react-leaflet').then((m) => m.Marker), { ss
 const Popup = dynamic(() => import('react-leaflet').then((m) => m.Popup), { ssr: false });
 const useMap = dynamic(() => import('react-leaflet').then((m) => m.useMap), { ssr: false });
 
-// 地図の中心を動かすための内部コンポーネント
-function MapController({ center }: { center: [number, number] }) {
-  // @ts-ignore
+// 地図の中心を現在地に動かすための内部コントローラー
+function MapViewController({ center }: { center: [number, number] }) {
   const map = useMap();
   useEffect(() => {
-    map.setView(center, 15); // 緯度経度が変わったらズーム15で移動！
+    map.setView(center, 15); // 緯度経度が更新されたらズーム15でその場所へ移動！
   }, [center, map]);
   return null;
 }
@@ -30,7 +29,7 @@ export default function Home() {
     setIsClient(true);
   }, []);
 
-  // 登録されたトイレのスポットデータ（例として東京駅周辺と現在地付近）
+  // 登録されたトイレのスポットデータ
   const toiletSpots = [
     { id: 1, lat: 35.6816, lng: 139.7671, name: '東京駅ナカの聖域トイレ' },
     { id: 2, lat: 35.6850, lng: 139.7100, name: '神聖な個室 A' },
@@ -49,7 +48,7 @@ export default function Home() {
       (position) => {
         const { latitude, longitude } = position.coords;
         console.log('取得した現在地:', latitude, longitude);
-        setCoords([latitude, longitude]); // ここで地図の中心座標を更新！
+        setCoords([latitude, longitude]); // 現在地の座標に更新！
         setLoading(false);
       },
       (error) => {
@@ -104,7 +103,7 @@ export default function Home() {
       <div style={{ width: '100%', maxWidth: '800px', height: '480px', margin: '0 auto', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
         {isClient && (
           <MapContainer center={coords} zoom={13} style={{ width: '100%', height: '100%' }}>
-            <MapController center={coords} />
+            <MapViewController center={coords} />
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
