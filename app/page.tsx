@@ -1,12 +1,25 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import dynamic from 'next/dynamic';
+import 'leaflet/dist/leaflet.css';
+
+// Leafletの地図コンポーネントを動的に読み込む（SSR対策）
+const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false });
+const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer), { ssr: false });
+const Marker = dynamic(() => import('react-leaflet').then((m) => m.Marker), { ssr: false });
+const Popup = dynamic(() => import('react-leaflet').then((m) => m.Popup), { ssr: false });
 
 export default function Home() {
-  const [coords, setCoords] = useState({ lat: 35.6812, lng: 139.7671 });
+  const [coords, setCoords] = useState<[number, number]>([35.6812, 139.7671]);
   const [loading, setLoading] = useState(false);
+  const [isClient, setIsClient] = useState(false);
 
-  // サンプルのトイレ位置データ（緯度・経度・名前）
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  // 登録されたトイレのスポットデータ（緯度・経度・名前）
   const toiletSpots = [
     { id: 1, lat: 35.6850, lng: 139.7100, name: '神聖な個室 A' },
     { id: 2, lat: 35.6750, lng: 139.7700, name: '隠れ家的な個室 B' },
@@ -24,7 +37,7 @@ export default function Home() {
     navigator.geolocation.getCurrentPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        setCoords({ lat: latitude, lng: longitude });
+        setCoords([latitude, longitude]);
         setLoading(false);
       },
       (error) => {
@@ -39,8 +52,6 @@ export default function Home() {
       }
     );
   };
-
-  const mapUrl = `https://www.openstreetmap.org/export/embed.html?bbox=${coords.lng - 0.01}%2C${coords.lat - 0.008}%2C${coords.lng + 0.01}%2C${coords.lat + 0.008}&layer=mapnik&marker=${coords.lat}%2C${coords.lng}`;
 
   return (
     <main style={{ padding: '20px', textAlign: 'center', fontFamily: 'sans-serif', backgroundColor: '#FDFBF7', minHeight: '100vh' }}>
@@ -65,7 +76,7 @@ export default function Home() {
         {loading ? '📍 現在地を取得中...' : '📍 現在地から周辺を探す'}
       </button>
 
-      {/* トイレスポット一覧の表示エリア */}
+      {/* トイレスポット一覧 */}
       <div style={{ margin: '15px auto', maxWidth: '800px', textAlign: 'left', background: '#fff', padding: '10px 15px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
         <h3 style={{ fontSize: '14px', color: '#1E293B', margin: '0 0 8px 0' }}>🚻 周辺の登録トイレ ({toiletSpots.length}件)</h3>
         <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#444' }}>
@@ -77,8 +88,24 @@ export default function Home() {
         </ul>
       </div>
 
+      {/* Leafletを使ったインタラクティブな地図エリア */}
       <div style={{ width: '100%', maxWidth: '800px', height: '480px', margin: '0 auto', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
-        <iframe title="Toilet Map" width="100%" height="100%" src={mapUrl} style={{ border: 0 }} />
+        {isClient && (
+          <MapContainer center={coords} zoom={13} style={{ width: '100%', height: '100%' }}>
+            <TileLayer
+              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            />
+            {/* 各トイレスポットにピン（マーカー）を立てる */}
+            {toiletSpots.map((spot) => (
+              <Marker key={spot.id} position={[spot.lat, spot.lng]}>
+                <Popup>
+                  <strong>{spot.name}</strong><br />きれいな個室です🚻
+                </Popup>
+              </Marker>
+            ))}
+          </MapContainer>
+        )}
       </div>
     </main>
   );
