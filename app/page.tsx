@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import 'leaflet/dist/leaflet.css';
+import L from 'leaflet'; // Leaflet本体のインポート
 
 // Leafletの地図コンポーネントを動的に読み込む（SSR対策）
 const MapContainer = dynamic(() => import('react-leaflet').then((m) => m.MapContainer), { ssr: false });
@@ -10,17 +11,41 @@ const TileLayer = dynamic(() => import('react-leaflet').then((m) => m.TileLayer)
 const Marker = dynamic(() => import('react-leaflet').then((m) => m.Marker), { ssr: false });
 const Popup = dynamic(() => import('react-leaflet').then((m) => m.Popup), { ssr: false });
 
+// 【色彩コーディネーター特製】オリジナルのカスタムトイレアイコンを作成！
+const customToiletIcon = L.divIcon({
+  className: 'custom-toilet-marker',
+  html: `
+    <div style="
+      background-color: #C53030; 
+      color: white; 
+      width: 36px; 
+      height: 36px; 
+      border-radius: 50%; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-size: 18px; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+      border: 2px solid #ffffff;
+      font-weight: bold;
+    ">🚻</div>
+  `,
+  iconSize: [36, 36],
+  iconAnchor: [18, 18], // アイコンの中心を座標に合わせる
+  popupAnchor: [0, -18],
+});
+
 export default function Home() {
   const [coords, setCoords] = useState<[number, number]>([35.6812, 139.7671]); // 初期値：東京駅
   const [loading, setLoading] = useState(false);
   const [isClient, setIsClient] = useState(false);
-  const [mapKey, setMapKey] = useState(0); // 地図を強制的に再描画するためのキー
+  const [mapKey, setMapKey] = useState(0); // 地図の強制再描画用キー
 
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // 登録されたトイレのスポットデータ
+  // 登録されたトイレのスポットデータ（現在地付近やテスト用）
   const toiletSpots = [
     { id: 1, lat: 35.6816, lng: 139.7671, name: '東京駅ナカの聖域トイレ' },
     { id: 2, lat: 35.6850, lng: 139.7100, name: '神聖な個室 A' },
@@ -40,12 +65,12 @@ export default function Home() {
         const { latitude, longitude } = position.coords;
         console.log('取得した現在地:', latitude, longitude);
         setCoords([latitude, longitude]); // 座標を現在地に更新！
-        setMapKey((prev) => prev + 1);    // 地図のキーを変更して強制的に再描画！
+        setMapKey((prev) => prev + 1);    // 地図を再描画して現在地へワープ！
         setLoading(false);
       },
       (error) => {
         console.error('位置情報の取得エラー:', error);
-        alert('現在地を取得できませんでした。ブラウザの位置情報許可（アドレスバーの鍵マーク等）を確認してください。');
+        alert('現在地を取得できませんでした。ブラウザの位置情報許可を確認してください。');
         setLoading(false);
       },
       {
@@ -91,7 +116,7 @@ export default function Home() {
         </ul>
       </div>
 
-      {/* Leafletを使ったインタラクティブな地図エリア（keyを使って強制再描画） */}
+      {/* Leafletを使ったインタラクティブな地図エリア */}
       <div style={{ width: '100%', maxWidth: '800px', height: '480px', margin: '0 auto', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
         {isClient && (
           <MapContainer key={mapKey} center={coords} zoom={15} style={{ width: '100%', height: '100%' }}>
@@ -99,9 +124,9 @@ export default function Home() {
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            {/* 各トイレスポットにピン（マーカー）を立てる */}
+            {/* 各トイレスポットにカスタムアイコン（ピン）を配置 */}
             {toiletSpots.map((spot) => (
-              <Marker key={spot.id} position={[spot.lat, spot.lng]}>
+              <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={customToiletIcon}>
                 <Popup>
                   <strong>{spot.name}</strong><br />きれいな個室です🚻
                 </Popup>
