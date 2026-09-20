@@ -1,0 +1,50 @@
+/* テーマカラー①：御朱印・朱の参道 */
+:root {
+  --color-main: #C23B22;   /* 境内朱色 */
+  --color-base: #F7F4EB;   /* 和紙生成り */
+  --color-text: #222222;   /* 墨黒 */
+  --color-white: #FFFFFF;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-base);
+  color: var(--color-text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* ヘッダーのスタイル */
+.header {
+  background-color: var(--color-main);
+  color: var(--color-white);
+  padding: 12px 20px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.4rem;
+  letter-spacing: 1px;
+}
+
+.header p {
+  margin: 4px 0 0 0;
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+
+/* 地図の容器 */
+.map-container {
+  width: 100vw;
+  height: calc(100vh - 70px);
+}
+
+/* リーフレットのポップアップ用装飾 */
+.leaflet-popup-content-wrapper {
+  background-color: var(--color-base) !important;
+  color: var(--color-text) !important;
+  border-radius: 8px !important;
+  border: 1px solid var(--color-main);
+}
