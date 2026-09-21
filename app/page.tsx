@@ -20,19 +20,19 @@ export default function Home() {
   const [toiletIcon, setToiletIcon] = useState<any>(null);
   const [userIcon, setUserIcon] = useState<any>(null);
 
-  // 【リアルオープンデータ対応】現実の公共トイレ・オープンデータを想定したスポット一覧
-  // 友達と共有するときは、ここに自治体のオープンデータ（CSV等）を読み込ませて拡張できます！
+  // 【1都3県＆店舗名対応】コンビニや店舗名が明確にわかる信頼のトイレスポット一覧
   const [toiletSpots, setToiletSpots] = useState([
-    { id: 1, lat: 35.6816, lng: 139.7671, name: '【公衆データ】東京駅地下街パブリックトイレ', address: '東京都千代田区丸の内1丁目 (オープンデータ連携)' },
-    { id: 2, lat: 35.6850, lng: 139.7100, name: '【自治体公開】新宿西口公園公衆トイレ', address: '東京都新宿区西新宿2丁目' },
-    { id: 3, lat: 35.6750, lng: 139.7700, name: '【オープンデータ】銀座中央通り地下トイレ', address: '東京都中央区銀座4丁目' },
+    { id: 1, lat: 35.6816, lng: 139.7671, name: 'セブンイレブン 千代田区丸の内1丁目店', category: 'コンビニ', address: '東京都千代田区丸の内1-1' },
+    { id: 2, lat: 35.4437, lng: 139.6380, name: 'ローソン 横浜みなとみらい四丁目店', category: 'コンビニ', address: '神奈川県横浜市西区みなとみらい4' },
+    { id: 3, lat: 35.6074, lng: 140.1065, name: 'ファミリーマート 千葉中央駅前店', category: 'コンビニ', address: '千葉県千葉市中央区中央1' },
+    { id: 4, lat: 35.8617, lng: 139.6455, name: 'スターバックスコーヒー さいたま新都心店', category: 'カフェ・店舗', address: '埼玉県さいたま市大宮区吉敷町4' },
   ]);
 
   useEffect(() => {
     setIsClient(true);
 
     import('leaflet').then((L) => {
-      // トイレ用アイコン（アースカラー・深緑：Version A）
+      // トイレ用アイコン（店舗名がわかりやすい深緑ベース）
       const tIcon = L.divIcon({
         className: 'custom-toilet-marker',
         html: `
@@ -100,13 +100,13 @@ export default function Home() {
         setCurrentLocation(currentCoord);
         setMapKey((prev) => prev + 1);
 
-        // 現在地取得時に、現実のオープンデータAPI等から取得したと仮定した周辺トイレデータを生成
-        const nearbyOpenDataSpots = [
-          { id: 201, lat: latitude + 0.0015, lng: longitude + 0.0015, name: '周辺オープンデータ：駅前広場公衆トイレ', address: '現在地から約200m' },
-          { id: 202, lat: latitude - 0.002, lng: longitude + 0.002, name: '周辺オープンデータ：区立公園トイレ', address: '現在地から約350m' },
-          { id: 203, lat: latitude + 0.0025, lng: longitude - 0.0015, name: '周辺オープンデータ：文化会館1階トイレ', address: '現在地から約400m' },
+        // 現在地取得時に、周辺のコンビニや店舗トイレデータを動的にシミュレート
+        const nearbyStoreSpots = [
+          { id: 101, lat: latitude + 0.002, lng: longitude + 0.002, name: 'セブンイレブン 近隣店舗', category: 'コンビニ', address: '現在地から約200m' },
+          { id: 102, lat: latitude - 0.002, lng: longitude - 0.002, name: 'ローソン 近隣店舗', category: 'コンビニ', address: '現在地から約300m' },
+          { id: 103, lat: latitude + 0.0025, lng: longitude - 0.0015, name: 'ファミリーマート 近隣店舗', category: 'コンビニ', address: '現在地から約350m' },
         ];
-        setToiletSpots(nearbyOpenDataSpots);
+        setToiletSpots(nearbyStoreSpots);
 
         setLoading(false);
       },
@@ -126,7 +126,7 @@ export default function Home() {
   return (
     <main style={{ padding: '20px', textAlign: 'center', fontFamily: 'sans-serif', backgroundColor: '#FDFBF7', minHeight: '100vh' }}>
       <h1 style={{ color: '#2F855A', fontSize: '24px', margin: '0 0 8px 0' }}>『トイレ巡礼記』</h1>
-      <p style={{ fontSize: '13px', color: '#666', margin: '0 0 20px 0' }}>偏愛toolシリーズ - オープンデータ連動型 聖なる個室検索</p>
+      <p style={{ fontSize: '13px', color: '#666', margin: '0 0 20px 0' }}>偏愛toolシリーズ - 店舗・コンビニ名付き 信頼の聖域検索</p>
 
       <button
         onClick={handleGetLocation}
@@ -143,16 +143,19 @@ export default function Home() {
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
         }}
       >
-        {loading ? '📍 現在地のオープンデータを検索中...' : '📍 現在地から周辺の公衆トイレを探す'}
+        {loading ? '📍 周辺の店舗を検索中...' : '📍 現在地から近くの店舗・コンビニを探す'}
       </button>
 
-      {/* トイレスポット一覧 */}
+      {/* トイレスポット一覧（店舗名付き） */}
       <div style={{ margin: '15px auto', maxWidth: '800px', textAlign: 'left', background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-        <h3 style={{ fontSize: '14px', color: '#2F855A', margin: '0 0 10px 0' }}>🚻 取得されたオープンデータ・スポット ({toiletSpots.length}件)</h3>
+        <h3 style={{ fontSize: '14px', color: '#2F855A', margin: '0 0 10px 0' }}>🏪 信用できる店舗・トイレリスト ({toiletSpots.length}件)</h3>
         <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#444' }}>
           {toiletSpots.map((spot) => (
             <li key={spot.id} style={{ margin: '8px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
               <div>
+                <span style={{ backgroundColor: '#EDF2F7', color: '#2D3748', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>
+                  {spot.category}
+                </span>
                 <strong>{spot.name}</strong> <span style={{ color: '#666', fontSize: '12px' }}>({spot.address})</span>
               </div>
               <a
@@ -180,10 +183,10 @@ export default function Home() {
       {/* MapArea */}
       <div style={{ width: '100%', maxWidth: '800px', height: '480px', margin: '0 auto', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
         {isClient && toiletIcon && userIcon && (
-          <MapContainer key={mapKey} center={coords} zoom={15} style={{ width: '100%', height: '100%' }}>
+          <MapContainer key={mapKey} center={coords} zoom={11} style={{ width: '100%', height: '100%' }}>
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/*.png"
+              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
             
             {currentLocation && (
@@ -198,7 +201,7 @@ export default function Home() {
               <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={toiletIcon}>
                 <Popup>
                   <strong>{spot.name}</strong><br />
-                  {spot.address}<br /><br />
+                  <span style={{ color: '#2F855A', fontWeight: 'bold' }}>[{spot.category}]</span> {spot.address}<br /><br />
                   <a
                     href={`https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`}
                     target="_blank"
