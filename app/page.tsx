@@ -18,51 +18,79 @@ export default function Home() {
   const [mapKey, setMapKey] = useState(0);
 
   const [toiletIcon, setToiletIcon] = useState<any>(null);
+  const [storeIcon, setStoreIcon] = useState<any>(null);
   const [userIcon, setUserIcon] = useState<any>(null);
 
-  // 【1都3県＆店舗名対応】コンビニや店舗名が明確にわかる信頼のトイレスポット一覧
+  // 【1都3県対応】公衆トイレ・公園トイレ ＋ コンビニ・店舗トイレをすべて網羅した聖域リスト
   const [toiletSpots, setToiletSpots] = useState([
-    { id: 1, lat: 35.6816, lng: 139.7671, name: 'セブンイレブン 千代田区丸の内1丁目店', category: 'コンビニ', address: '東京都千代田区丸の内1-1' },
-    { id: 2, lat: 35.4437, lng: 139.6380, name: 'ローソン 横浜みなとみらい四丁目店', category: 'コンビニ', address: '神奈川県横浜市西区みなとみらい4' },
-    { id: 3, lat: 35.6074, lng: 140.1065, name: 'ファミリーマート 千葉中央駅前店', category: 'コンビニ', address: '千葉県千葉市中央区中央1' },
-    { id: 4, lat: 35.8617, lng: 139.6455, name: 'スターバックスコーヒー さいたま新都心店', category: 'カフェ・店舗', address: '埼玉県さいたま市大宮区吉敷町4' },
+    { id: 1, lat: 35.6816, lng: 139.7671, name: '東京駅地下街 パブリックトイレ', category: '公衆トイレ', address: '東京都千代田区丸の内1丁目' },
+    { id: 2, lat: 35.4437, lng: 139.6380, name: '横浜公園 公衆トイレ', category: '公園', address: '神奈川県横浜市中区横浜公園' },
+    { id: 3, lat: 35.6074, lng: 140.1065, name: '千葉市中央公園 トイレ', category: '公園', address: '千葉県千葉市中央区中央1丁目' },
+    { id: 4, lat: 35.8617, lng: 139.6455, name: 'さいたま新都心公園 トイレ', category: '公園', address: '埼玉県さいたま市大宮区吉敷町4' },
+    { id: 5, lat: 35.6850, lng: 139.7100, name: 'セブンイレブン 新宿西口2丁目店', category: 'コンビニ', address: '東京都新宿区西新宿2丁目' },
+    { id: 6, lat: 35.4500, lng: 139.6300, name: 'ローソン みなとみらいグランドセントラル店', category: 'コンビニ', address: '神奈川県横浜市西区みなとみらい4丁目' },
   ]);
 
   useEffect(() => {
     setIsClient(true);
 
     import('leaflet').then((L) => {
-      // トイレ用アイコン（店舗名がわかりやすい深緑ベース）
+      // 1. 公衆トイレ・公園用アイコン（深緑：自然・公共の安心感）
       const tIcon = L.divIcon({
         className: 'custom-toilet-marker',
         html: `
           <div style="
             background-color: #2F855A; 
             color: white; 
-            width: 38px; 
-            height: 38px; 
+            width: 36px; 
+            height: 36px; 
             border-radius: 50%; 
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            font-size: 18px; 
+            font-size: 16px; 
             box-shadow: 0 4px 12px rgba(0,0,0,0.25);
             border: 2px solid #ffffff;
             font-weight: bold;
           ">🚻</div>
         `,
-        iconSize: [38, 38],
-        iconAnchor: [19, 19],
-        popupAnchor: [0, -19],
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+        popupAnchor: [0, -18],
       });
       setToiletIcon(tIcon);
 
-      // 現在地用アイコン（リフレッシュブルー）
+      // 2. コンビニ・店舗用アイコン（オーシャンブルー：店舗の確実性・スマートさ）
+      const sIcon = L.divIcon({
+        className: 'custom-store-marker',
+        html: `
+          <div style="
+            background-color: #3182CE; 
+            color: white; 
+            width: 36px; 
+            height: 36px; 
+            border-radius: 50%; 
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            font-size: 16px; 
+            box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+            border: 2px solid #ffffff;
+            font-weight: bold;
+          ">🏪</div>
+        `,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18],
+        popupAnchor: [0, -18],
+      });
+      setStoreIcon(sIcon);
+
+      // 3. 現在地用アイコン
       const uIcon = L.divIcon({
         className: 'custom-user-marker',
         html: `
           <div style="
-            background-color: #3182CE; 
+            background-color: #D69E2E; 
             color: white; 
             width: 32px; 
             height: 32px; 
@@ -70,8 +98,8 @@ export default function Home() {
             display: flex; 
             align-items: center; 
             justify-content: center; 
-            font-size: 16px; 
-            box-shadow: 0 0 0 6px rgba(49,130,206,0.3);
+            font-size: 15px; 
+            box-shadow: 0 0 0 6px rgba(214,158,46,0.3);
             border: 2px solid #ffffff;
             font-weight: bold;
           ">📍</div>
@@ -100,13 +128,14 @@ export default function Home() {
         setCurrentLocation(currentCoord);
         setMapKey((prev) => prev + 1);
 
-        // 現在地取得時に、周辺のコンビニや店舗トイレデータを動的にシミュレート
-        const nearbyStoreSpots = [
-          { id: 101, lat: latitude + 0.002, lng: longitude + 0.002, name: 'セブンイレブン 近隣店舗', category: 'コンビニ', address: '現在地から約200m' },
-          { id: 102, lat: latitude - 0.002, lng: longitude - 0.002, name: 'ローソン 近隣店舗', category: 'コンビニ', address: '現在地から約300m' },
-          { id: 103, lat: latitude + 0.0025, lng: longitude - 0.0015, name: 'ファミリーマート 近隣店舗', category: 'コンビニ', address: '現在地から約350m' },
+        // 現在地周辺の「公衆トイレ」「公園」「コンビニ」をバランスよくシミュレート生成
+        const nearbyMixedSpots = [
+          { id: 101, lat: latitude + 0.0015, lng: longitude + 0.0015, name: '近隣の街区公園 トイレ', category: '公園', address: '現在地から約150m' },
+          { id: 102, lat: latitude - 0.002, lng: longitude + 0.002, name: 'セブンイレブン 近隣店舗', category: 'コンビニ', address: '現在地から約250m' },
+          { id: 103, lat: latitude + 0.0025, lng: longitude - 0.0015, name: '区立パブリック公衆トイレ', category: '公衆トイレ', address: '現在地から約350m' },
+          { id: 104, lat: latitude - 0.0015, lng: longitude - 0.0025, name: 'ローソン 近隣店舗', category: 'コンビニ', address: '現在地から約400m' },
         ];
-        setToiletSpots(nearbyStoreSpots);
+        setToiletSpots(nearbyMixedSpots);
 
         setLoading(false);
       },
@@ -126,7 +155,7 @@ export default function Home() {
   return (
     <main style={{ padding: '20px', textAlign: 'center', fontFamily: 'sans-serif', backgroundColor: '#FDFBF7', minHeight: '100vh' }}>
       <h1 style={{ color: '#2F855A', fontSize: '24px', margin: '0 0 8px 0' }}>『トイレ巡礼記』</h1>
-      <p style={{ fontSize: '13px', color: '#666', margin: '0 0 20px 0' }}>偏愛toolシリーズ - 店舗・コンビニ名付き 信頼の聖域検索</p>
+      <p style={{ fontSize: '13px', color: '#666', margin: '0 0 20px 0' }}>偏愛toolシリーズ - 公衆・公園・コンビニ完全網羅 聖域検索</p>
 
       <button
         onClick={handleGetLocation}
@@ -143,18 +172,27 @@ export default function Home() {
           boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
         }}
       >
-        {loading ? '📍 周辺の店舗を検索中...' : '📍 現在地から近くの店舗・コンビニを探す'}
+        {loading ? '📍 周辺のトイレ＆店舗を検索中...' : '📍 現在地から近くのトイレ・店舗を探す'}
       </button>
 
-      {/* トイレスポット一覧（店舗名付き） */}
+      {/* スポット一覧（カテゴリバッジ付き） */}
       <div style={{ margin: '15px auto', maxWidth: '800px', textAlign: 'left', background: '#fff', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-        <h3 style={{ fontSize: '14px', color: '#2F855A', margin: '0 0 10px 0' }}>🏪 信用できる店舗・トイレリスト ({toiletSpots.length}件)</h3>
+        <h3 style={{ fontSize: '14px', color: '#2F855A', margin: '0 0 10px 0' }}>🗺️ 発見された聖域スポット ({toiletSpots.length}件)</h3>
         <ul style={{ margin: 0, paddingLeft: '20px', fontSize: '13px', color: '#444' }}>
           {toiletSpots.map((spot) => (
             <li key={spot.id} style={{ margin: '8px 0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
               <div>
-                <span style={{ backgroundColor: '#EDF2F7', color: '#2D3748', padding: '2px 6px', borderRadius: '4px', fontSize: '11px', marginRight: '6px', fontWeight: 'bold' }}>
-                  {spot.category}
+                <span style={{ 
+                  backgroundColor: spot.category === 'コンビニ' ? '#EBF8FF' : '#F0FFF4', 
+                  color: spot.category === 'コンビニ' ? '#2B6CB0' : '#2F855A', 
+                  border: `1px solid ${spot.category === 'コンビニ' ? '#BEE3F8' : '#C6F6D5'}`,
+                  padding: '2px 6px', 
+                  borderRadius: '4px', 
+                  fontSize: '11px', 
+                  marginRight: '6px', 
+                  fontWeight: 'bold' 
+                }}>
+                  {spot.category === 'コンビニ' ? '🏪 コンビニ' : spot.category === '公園' ? '🌳 公園' : '🚻 公衆トイレ'}
                 </span>
                 <strong>{spot.name}</strong> <span style={{ color: '#666', fontSize: '12px' }}>({spot.address})</span>
               </div>
@@ -182,7 +220,7 @@ export default function Home() {
 
       {/* MapArea */}
       <div style={{ width: '100%', maxWidth: '800px', height: '480px', margin: '0 auto', borderRadius: '12px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0,0,0,0.1)' }}>
-        {isClient && toiletIcon && userIcon && (
+        {isClient && toiletIcon && storeIcon && userIcon && (
           <MapContainer key={mapKey} center={coords} zoom={11} style={{ width: '100%', height: '100%' }}>
             <TileLayer
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -197,22 +235,28 @@ export default function Home() {
               </Marker>
             )}
 
-            {toiletSpots.map((spot) => (
-              <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={toiletIcon}>
-                <Popup>
-                  <strong>{spot.name}</strong><br />
-                  <span style={{ color: '#2F855A', fontWeight: 'bold' }}>[{spot.category}]</span> {spot.address}<br /><br />
-                  <a
-                    href={`https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: '#2B6CB0', fontWeight: 'bold', textDecoration: 'underline' }}
-                  >
-                    🗺️ Googleマップでナビを開く
-                  </a>
-                </Popup>
-              </Marker>
-            ))}
+            {toiletSpots.map((spot) => {
+              // カテゴリに応じてマーカーのアイコンを切り分ける
+              const markerIcon = spot.category === 'コンビニ' ? storeIcon : toiletIcon;
+              return (
+                <Marker key={spot.id} position={[spot.lat, spot.lng]} icon={markerIcon}>
+                  <Popup>
+                    <strong>{spot.name}</strong><br />
+                    <span style={{ color: spot.category === 'コンビニ' ? '#2B6CB0' : '#2F855A', fontWeight: 'bold' }}>
+                      [{spot.category}]
+                    </span> {spot.address}<br /><br />
+                    <a
+                      href={`https://www.google.com/maps/dir/?api=1&destination=${spot.lat},${spot.lng}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{ color: '#2B6CB0', fontWeight: 'bold', textDecoration: 'underline' }}
+                    >
+                      🗺️ Googleマップでナビを開く
+                    </a>
+                  </Popup>
+                </Marker>
+              );
+            })}
           </MapContainer>
         )}
       </div>
