@@ -292,7 +292,7 @@ export default function Home() {
             {currentLocation && (
               <Marker position={currentLocation} icon={userIcon}>
                 <Popup>
-                  <strong>📍 あなたの現在地</strong><br />ここから出発！
+                  <strong>📍 あなたの現在地</strong><br />ここから出発// テスト！
                 </Popup>
               </Marker>
             )}
